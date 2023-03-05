@@ -1,0 +1,6 @@
+.idea/
+.ipynb_checkpoints/
+.temp.csv
+__pycache__/
+main.py
+test.ipynb
