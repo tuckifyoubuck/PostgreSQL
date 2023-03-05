@@ -64,34 +64,23 @@ class PSQL:
             print('exception type: ', type(e))
             sys.exit(1)
 
-    def insert_into_tbl(self, dataframe, tbl_name, schema='public', filename='.temp.csv'):
-        dataframe.to_csv(filename, header=False, index=True)
-        file = open(filename, 'r', encoding='utf8')
+    def insert_into_tbl_both(self, dataframe, tbl_name, schema='public', filename=None):
+        if filename:
+            # With user given filename
+            dataframe.to_csv(filename, header=False, index=True)
+            stdin = open(filename, 'r', encoding='utf8')
+        else:
+            # With in-memory buffer
+            stdin= io.StringIO()
+            dataframe.to_csv(stdin, header=False, index=True)
+            stdin.seek(0)
         print('Connecting to DB with psycopg2...')
         con = psycopg2.connect(**self.params_dict)
         print('Connected to DB!')
         cursor = con.cursor()
         copy_sql = 'COPY ' + schema + '.' + tbl_name + """ FROM stdin WITH CSV HEADER"""
         try:
-            cursor.copy_expert(sql=copy_sql, file=file)
-            con.commit()
-            print('Data inserted')
-        except Exception as e:
-            print('error: ', e)
-            print('exception type: ', type(e))
-            sys.exit(1)
-
-    def insert_into_tbl_buf(self, dataframe, tbl_name, schema='public'):
-        buffer = io.StringIO()
-        dataframe.to_csv(buffer, header=False, index=True)
-        buffer.seek(0)
-        print('Connecting to DB with psycopg2...')
-        con = psycopg2.connect(**self.params_dict)
-        print('Connected to DB!')
-        cursor = con.cursor()
-        copy_sql = 'COPY ' + schema + '.' + tbl_name + """ FROM stdin WITH CSV HEADER"""
-        try:
-            cursor.copy_expert(sql=copy_sql, file=buffer)
+            cursor.copy_expert(sql=copy_sql, file=stdin)
             con.commit()
             con.close()
             print('Data inserted')
