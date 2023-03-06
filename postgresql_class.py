@@ -106,16 +106,15 @@ class PSQL:
             stdin = io.StringIO()
             dataframe.to_csv(stdin, header=False, index=True)
             stdin.seek(0)
-        print('Connecting to DB with psycopg2...')
+        # Using psycopg2 connection so that copy_expert method can be utilized for fast inserts
         con = psycopg2.connect(**self.params_dict)
-        print('Connected to DB!')
         cursor = con.cursor()
         copy_sql = 'COPY ' + schema + '.' + tbl_name + """ FROM stdin WITH CSV HEADER"""
         try:
             cursor.copy_expert(sql=copy_sql, file=stdin)
             con.commit()
             con.close()
-            print('Data inserted')
+            print('Data inserted into', tbl_name)
         except Exception as e:
             con.close()
             print('error: ', e)
