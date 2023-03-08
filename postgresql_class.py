@@ -1,7 +1,8 @@
+import pandas as pd
 import psycopg2
 from sqlalchemy import create_engine, text, inspect
 from sqlalchemy.engine import URL
-import sys, io, os
+import sys, io
 
 class PSQL:
     def __init__(self, user, password, host='localhost', database='postgres'):
@@ -154,6 +155,13 @@ class PSQL:
             print('exception type: ', type(e))
             sys.exit(1)
 
-
-
-
+    def query_db(self, query) -> pd.DataFrame:
+        with self.engine.begin() as connection:
+            try:
+                df = pd.read_sql(sql=text(query), con=connection)
+                print('query successful')
+                return df
+            except Exception as e:
+                print('error: ', e)
+                print('exception type: ', type(e))
+                sys.exit(1)
