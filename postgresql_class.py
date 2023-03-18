@@ -68,7 +68,7 @@ class PSQL:
                 print('exception type: ', type(e))
                 sys.exit(1)
 
-    def create_tbl(self, dataframe, tbl_name, schema, if_exists='fail'):
+    def create_tbl(self, dataframe, tbl_name, schema='public', if_exists='fail'):
         """
         takes dataframe information as input and creates an empty PSQL table based on the data
         :param dataframe: dataframe to be used to create skeleton tbl
@@ -79,7 +79,7 @@ class PSQL:
         """
         try:
             # takes column names and data types and initializes empty table in DB
-            dataframe.head(0).to_sql(name=tbl_name.lower(), con=self.engine, schema=schema, if_exists=if_exists)
+            dataframe.head(0).to_sql(name=tbl_name.lower(), con=self.engine, schema=schema, if_exists=if_exists, index=False)
             print(tbl_name, 'table created!')
         except Exception as e:
             print('error: ', e)
@@ -110,6 +110,22 @@ class PSQL:
         # Using psycopg2 connection so that copy_expert method can be utilized for fast inserts
         con = psycopg2.connect(**self.params_dict)
         cursor = con.cursor()
+        copy_sql = 'COPY ' + schema + '.' + tbl_name + """ FROM stdin WITH CSV HEADER"""
+        try:
+            cursor.copy_expert(sql=copy_sql, file=stdin)
+            con.commit()
+            con.close()
+            print('Data inserted into', tbl_name)
+        except Exception as e:
+            con.close()
+            print('error: ', e)
+            print('exception type: ', type(e))
+            sys.exit(1)
+
+    def bulk_insert_into_tbl_from_csv(self, filename, tbl_name, schema='public'):
+        con = psycopg2.connect(**self.params_dict)
+        cursor = con.cursor()
+        stdin = open(filename, 'r', encoding='utf8')
         copy_sql = 'COPY ' + schema + '.' + tbl_name + """ FROM stdin WITH CSV HEADER"""
         try:
             cursor.copy_expert(sql=copy_sql, file=stdin)
